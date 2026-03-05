@@ -13,7 +13,7 @@ Usage:
     --max-iters <num_iters> \
 
 Example:
-  bash tools/standard_auto.sh --spec SPEC.md --remote gpu4090d --remote-repo-dir /home/master/code/TestCodex --local-log-dir /mnt/g/Github/TestCodex/logs --conda-path /home/master/software/oymk/uvlt --max-iters 5
+  bash tools/standard_auto.sh --spec SPEC.md --remote gpu4090d --remote-repo-dir /home/master/code/oymk/TestCodex --local-log-dir /mnt/g/Github/TestCodex/logs --conda-path /home/master/software/oymk/itsamatch --max-iters 5
 USAGE
 }
 
