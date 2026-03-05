@@ -27,16 +27,15 @@ python -m src.projector --out <dir> --seed 123
 
 运行后必须在 `<dir>` 下写出：
 
-* `metrics.json`，格式严格为：
+* `metrics.json`（**内容由实现者自行定义**）：
 
-```json
-{"ok": true, "score": <0~1的浮点数>, "details": "..."}
-```
+  * 必须是合法 JSON（推荐是一个 object）
+  * 必须包含：
+    * `ok`：boolean，表示本次运行是否“通过”
+    * `details`：string，清晰说明你定义的 metrics 含义、计算方式、以及 `ok` 的判定规则
+  * 其他字段（例如 `metrics`/`score`/`max_err` 等）**完全自由**，由你自己决定
 
-其中：
-
-* `score` 定义为：在固定随机输入上，输出与“参考实现”的最大绝对误差满足阈值时得分为 1，否则为 0（或根据误差映射为 0~1，但必须确定性）
-* `ok` 判定规则：`ok = (score >= 0.90)`
+> 目标是让 Codex/实现者自行决定什么是“好”的 metrics；只要定义清晰、确定性、可复现即可。
 
 > 注意：同一 seed 多次运行，`metrics.json` 内容必须完全一致（逐字一致）。
 
@@ -60,20 +59,16 @@ python -m src.projector --out <dir> --seed 123
 
 ## 测试要求
 
-新增 pytest 测试，要求 `pytest -q` 通过（如果本地环境没有 pytest 命令，请用 venv 的 python -m pytest）。
-测试至少覆盖：
+本任务**不要求**引入或运行 pytest。
 
-1. 形状检查：三种输入形状都输出正确形状
-2. 数值一致性：与参考 `nn.Linear` 的输出 close（例如 `torch.testing.assert_close`，rtol/atol 合理）
-3. 确定性：同 seed 初始化与同输入下输出完全一致（可用 `torch.allclose` 或直接比较 tensor）
-4. CLI 产物：`python -m src.projector --out tmp --seed 123` 会生成 `metrics.json`，且 `ok=true`、`score>=0.90`
+（可选）你可以提供简单的自检脚本或在 CLI 中输出更多调试信息，便于在远端 `run.log` 里定位问题。
 
 ## 验收标准
 
 * `python -m src.projector --out <dir> --seed 123` 生成的 `<dir>/metrics.json` 中：
 
   * `ok == true`
-  * `score >= 0.90`
 * 结果可复现：同 seed 重复运行，`metrics.json` 完全一致
-* 测试通过：`pytest -q` 通过
+
+额外要求：远端运行产生的 `run.log` 中应包含 `metrics.json` 的内容（便于回传后直接查看）。
 
