@@ -45,6 +45,8 @@ class Projector(nn.Module):
         _init_linear_deterministic(self.linear, seed=seed)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.ndim not in (1, 2, 3):
+            raise ValueError(f"Expected input rank in (1,2,3), got rank={x.ndim}")
         if x.shape[-1] != self.in_dim:
             raise ValueError(
                 f"Expected input last dim to be {self.in_dim}, got {x.shape[-1]}"
@@ -68,7 +70,7 @@ def compute_score(
     projector: Projector,
     seed: int,
     threshold: float = DEFAULT_ERR_THRESHOLD,
-) -> tuple[float, float]:
+) -> tuple[float, float, dict[str, float]]:
     ref = _build_reference_linear(
         in_dim=projector.in_dim,
         out_dim=projector.out_dim,
@@ -79,37 +81,57 @@ def compute_score(
 
     gen = torch.Generator(device="cpu")
     gen.manual_seed(seed + 1)
-    x = torch.randn(3, 5, projector.in_dim, generator=gen, dtype=projector.linear.weight.dtype)
+    x_1d = torch.randn(projector.in_dim, generator=gen, dtype=projector.linear.weight.dtype)
+    x_2d = torch.randn(3, projector.in_dim, generator=gen, dtype=projector.linear.weight.dtype)
+    x_3d = torch.randn(3, 5, projector.in_dim, generator=gen, dtype=projector.linear.weight.dtype)
 
     with torch.no_grad():
-        out_proj = projector(x)
-        out_ref = ref(x)
+        err_1d = (projector(x_1d) - ref(x_1d)).abs().max().item()
+        err_2d = (projector(x_2d) - ref(x_2d)).abs().max().item()
+        err_3d = (projector(x_3d) - ref(x_3d)).abs().max().item()
 
-    max_abs_err = (out_proj - out_ref).abs().max().item()
+    max_abs_err = max(err_1d, err_2d, err_3d)
     score = 1.0 if max_abs_err <= threshold else 0.0
-    return score, max_abs_err
+    err_by_shape = {
+        "[4096]": err_1d,
+        "[B,4096]": err_2d,
+        "[B,T,4096]": err_3d,
+    }
+    return score, max_abs_err, err_by_shape
 
 
 def run_cli(out_dir: Path, seed: int) -> dict:
     projector = Projector(seed=seed)
-    score, max_abs_err = compute_score(projector=projector, seed=seed)
+    score, max_abs_err, err_by_shape = compute_score(projector=projector, seed=seed)
 
     metrics = {
         "ok": score >= 0.90,
         "score": score,
+        "max_abs_err": max_abs_err,
+        "threshold": DEFAULT_ERR_THRESHOLD,
+        "err_by_shape": err_by_shape,
+        "config": {
+            "in_dim": projector.in_dim,
+            "out_dim": projector.out_dim,
+            "bias": projector.bias,
+            "dtype": str(projector.linear.weight.dtype),
+            "seed": seed,
+        },
         "details": (
-            f"reference=nn.Linear({projector.in_dim},{projector.out_dim},bias={projector.bias}); "
-            f"dtype={projector.linear.weight.dtype}; seed={seed}; "
-            f"max_abs_err={max_abs_err:.8e}; threshold={DEFAULT_ERR_THRESHOLD:.1e}"
+            "Metric definition: build a reference nn.Linear with identical dims/bias and "
+            "the same deterministic initialization seed; compare Projector and reference "
+            "outputs on 1D/2D/3D float32 CPU inputs; compute max absolute error over all "
+            "elements and shapes. "
+            f"Rule: ok=true iff max_abs_err <= {DEFAULT_ERR_THRESHOLD:.1e}. "
+            f"Reference used: nn.Linear({projector.in_dim},{projector.out_dim},bias={projector.bias})."
         ),
     }
 
     out_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = out_dir / "metrics.json"
-    metrics_path.write_text(
-        json.dumps(metrics, ensure_ascii=False, separators=(", ", ": ")) + "\n",
-        encoding="utf-8",
-    )
+    metrics_json = json.dumps(metrics, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    metrics_path.write_text(metrics_json, encoding="utf-8")
+    print(metrics_json, end="")
     return metrics
 
 
