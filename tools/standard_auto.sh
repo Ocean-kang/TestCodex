@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  bash tools/standard_codex.sh \
+  bash tools/standard_auto.sh \
     --spec SPEC.md \
     --remote <ssh-host-alias> \
     --remote-repo-dir <remote-path> \
@@ -13,7 +13,7 @@ Usage:
     --max-iters <num_iters> \
 
 Example:
-  bash tools/standard_codex.sh --spec SPEC.md --remote gpu4090d --remote-repo-dir /home/master/code/TestCodex --local-log-dir /mnt/g/Github/TestCodex/logs --conda-path /home/master/software/oymk/uvlt --max-iters 5
+  bash tools/standard_auto.sh --spec SPEC.md --remote gpu4090d --remote-repo-dir /home/master/code/TestCodex --local-log-dir /mnt/g/Github/TestCodex/logs --conda-path /home/master/software/oymk/uvlt --max-iters 5
 USAGE
 }
 
