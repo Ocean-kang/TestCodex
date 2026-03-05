@@ -13,7 +13,7 @@ Usage:
     --max-iters <num_iters> \
 
 Example:
-  bash tools/standard_codex.sh --spec SPEC.md --remote gpu4090d --remote-repo-dir /home/master/code/codex_outline_demo --local-log-dir /mnt/g/Github/codex_outline_demo/logs --conda-path /home/master/software/oymk/uvlt --max-iters 5
+  bash tools/standard_codex.sh --spec SPEC.md --remote gpu4090d --remote-repo-dir /home/master/code/TestCodex --local-log-dir /mnt/g/Github/TestCodex/logs --conda-path /home/master/software/oymk/uvlt --max-iters 5
 USAGE
 }
 
@@ -67,7 +67,6 @@ for i in $(seq 1 "$MAX_ITERS"); do
     "$SPEC_TEXT
 额外约束：
 - 你只能改工作区代码（.py、tests 等），不要做 git push/ssh/scp（这些由外层脚本做）。
-- 如果存在 log/last_run/ 里的 run.log 或 metrics.json，请阅读并据此改进。
 " 2>&1 | tee "$CODEX_OUT"
 
 
