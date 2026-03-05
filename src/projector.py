@@ -103,9 +103,10 @@ def compute_score(
 def run_cli(out_dir: Path, seed: int) -> dict:
     projector = Projector(seed=seed)
     score, max_abs_err, err_by_shape = compute_score(projector=projector, seed=seed)
+    ok = max_abs_err <= DEFAULT_ERR_THRESHOLD
 
     metrics = {
-        "ok": score >= 0.90,
+        "ok": ok,
         "score": score,
         "max_abs_err": max_abs_err,
         "threshold": DEFAULT_ERR_THRESHOLD,
