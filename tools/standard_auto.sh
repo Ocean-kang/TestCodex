@@ -46,11 +46,18 @@ fi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+mkdir -p log
+MASTER_LOG="log/standard_auto_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "$MASTER_LOG") 2>&1
+echo "[log] master log: $MASTER_LOG"
+
 # 基本保护：确保在 git repo 里
 git rev-parse --is-inside-work-tree >/dev/null
 
 mkdir -p log
+mkdir -p logs
 grep -qxF "log/" .gitignore 2>/dev/null || echo "log/" >> .gitignore
+grep -qxF "logs/" .gitignore 2>/dev/null || echo "logs/" >> .gitignore
 
 # 远端输出不要放 repo 里（避免 git clean -fd 清掉）
 REMOTE_OUT_ROOT="/home/master/code/oymk/outputs/$(basename "$ROOT")/runs"
